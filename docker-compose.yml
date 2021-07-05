@@ -1,0 +1,16 @@
+version: '3'
+services:
+  vocabulary-service:
+    build:
+      context: .
+      args:
+        REQUEREMENTS: requirements/test.txt
+    volumes:
+      - ./app:/service/app
+    networks:
+      2read_online:
+    command: uvicorn app.main:app --reload --host 0.0.0.0
+
+networks:
+  2read_online:
+    external: true
