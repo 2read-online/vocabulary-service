@@ -6,17 +6,18 @@ from bson import ObjectId
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
-from pydantic import BaseModel
 from pymongo.collection import Collection
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from app.config import CONFIG
+from app.db import Translation, get_translation_collection
+from app.schemas import TranslateRequest, LANG_CODE_MAP
 
 logging.basicConfig(level='DEBUG')
 logger = logging.getLogger('app')
 
-# texts: Collection = get_text_collection()
+translations: Collection = get_translation_collection()
 
 app = FastAPI()
 
@@ -64,55 +65,33 @@ def get_current_user(req: Request) -> ObjectId:
 #         raise HTTPException(status_code=403, detail="You have no permission to remove this text")
 #     return Text.from_db(text_db)
 
-LANG_CODE_MAP = {
-    'bul': 'BG',
-    'ces': 'CS',
-    'dan': 'DA',
-    'deu': 'DE',
-    'ell': 'EL',
-    'eng': 'EN',
-    'spa': 'ES',
-    'est': 'ET',
-    'fin': 'FI',
-    'fra': 'FR',
-    'hun': 'HU',
-    'ita': 'IT',
-    'jpn': 'JA',
-    'lit': 'LT',
-    'lav': 'LV',
-    'nld': 'NL',
-    'pol': 'PL',
-    'por': 'PT',
-    'ron': 'RO',
-    'rus': 'RU',
-    'slk': 'SK',
-    'slv': 'SL',
-    'swe': 'SV',
-    'zho': 'ZH',
-}
-
-
-class TranslateRequest(BaseModel):
-    text: str
-    source_lang: str
-    target_lang: str
-
-
 @app.post('/vocab/translate')
 def get_translation(req: TranslateRequest, user_id: ObjectId = Depends(get_current_user)):
     """Get text from DB by its ID
     """
-    r = requests.post(url='https://api-free.deepl.com/v2/translate',
-                      data={
-                          'source_lang': LANG_CODE_MAP[req.source_lang],
-                          'target_lang': LANG_CODE_MAP[req.target_lang],
-                          'auth_key': CONFIG.deepl_key,
-                          'text': req.text
-                      })
 
-    if r.status_code == 200:
-        logger.info('%s', r.text)
+    translation_db = translations.find_one({'text': req.text,
+                                            'source_lang': req.source_lang,
+                                            'target_lang': req.target_lang})
+    if translation_db is None:
+        logger.info('Translation not found. Ask DeepL')
+
+        r = requests.post(url='https://api-free.deepl.com/v2/translate',
+                          data={
+                              'source_lang': LANG_CODE_MAP[req.source_lang],
+                              'target_lang': LANG_CODE_MAP[req.target_lang],
+                              'auth_key': CONFIG.deepl_key,
+                              'text': req.text
+                          })
+
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.json())
+
+        translation = Translation(id=ObjectId(), text=req.text, source_lang=req.source_lang,
+                                  target_lang=req.target_lang,
+                                  translation=r.json()['translations'][0]['text'])
+        translations.insert_one(translation.db())
     else:
-        raise HTTPException(status_code=r.status_code, detail=r.json())
+        translation = Translation.from_db(translation_db)
 
-    return {}
+    return translation
