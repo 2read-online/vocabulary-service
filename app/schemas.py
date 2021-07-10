@@ -1,3 +1,4 @@
+"""Request schemas"""
 from pydantic import BaseModel, Field, validator, ValidationError
 
 LANG_CODE_MAP = {
@@ -35,22 +36,28 @@ def _check_language(lang: str):
 
 
 class TranslateRequest(BaseModel):
+    """Translate Request
+    """
     text: str
     source_lang: str = Field(alias='sourceLang', )
     target_lang: str = Field(alias='targetLang')
 
     @property
     def source_lang_code(self):
+        """DeepL code of source language
+        """
         return LANG_CODE_MAP[self.source_lang]
 
     @property
     def target_lang_code(self):
-        return LANG_CODE_MAP[self.source_lang]
+        """DeepL code of target language
+        """
+        return LANG_CODE_MAP[self.target_lang]
 
     @validator('source_lang')
-    def source_lang_must_be_supported(cls, lang: str):
+    def _source_lang_must_be_supported(cls, lang: str):  # pylint: disable=no-self-argument,no-self-use
         return _check_language(lang)
 
     @validator('target_lang')
-    def target_lang_must_be_supported(cls, lang: str):
+    def _target_lang_must_be_supported(cls, lang: str):  # pylint: disable=no-self-argument, no-self-use
         return _check_language(lang)

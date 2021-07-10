@@ -1,3 +1,4 @@
+"""DB Models"""
 import logging
 from datetime import datetime
 from typing import Optional
@@ -16,7 +17,7 @@ logger = logging.getLogger('db')
 
 
 def get_translation_collection():
-    """Get or setup user collection from MongoDB"""
+    """Get or setup translation collection from MongoDB"""
     client = MongoClient(CONFIG.mongodb_url)
     db: Database = client.prod
     translations: Collection = db.translations
@@ -77,10 +78,9 @@ class MongoModel(BaseModel):
 
 
 class Translation(MongoModel):
+    """Translation Model"""
     id: OID
     text: str
     source_lang: str = Field(alias='sourceLang')
     target_lang: str = Field(alias='targetLang')
     translation: str
-
-    # TODO: Add validation for supported languages

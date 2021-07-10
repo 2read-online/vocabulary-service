@@ -12,7 +12,7 @@ from starlette.responses import JSONResponse
 
 from app.config import CONFIG
 from app.db import Translation, get_translation_collection
-from app.schemas import TranslateRequest, LANG_CODE_MAP
+from app.schemas import TranslateRequest
 
 logging.basicConfig(level='DEBUG')
 logger = logging.getLogger('app')
@@ -51,45 +51,30 @@ def get_current_user(req: Request) -> ObjectId:
     return ObjectId(authorize.get_jwt_subject())
 
 
-# def find_text_and_check_permission(text_id: ObjectId, user_id: ObjectId) -> Text:
-#     """
-#     Find text in DB and check its owner
-#     :param text_id: text ID
-#     :param user_id: owner ID
-#     :return: found text document
-#     """
-#     text_db = texts.find_one({'_id': text_id})
-#     if text_db is None:
-#         raise HTTPException(status_code=404, detail="Text not found")
-#     if text_db['owner'] != user_id:
-#         raise HTTPException(status_code=403, detail="You have no permission to remove this text")
-#     return Text.from_db(text_db)
-
 @app.post('/vocab/translate')
-def get_translation(req: TranslateRequest, user_id: ObjectId = Depends(get_current_user)):
+def get_translation(req: TranslateRequest, _user_id: ObjectId = Depends(get_current_user)):
     """Get text from DB by its ID
     """
-
     translation_db = translations.find_one({'text': req.text,
                                             'source_lang': req.source_lang,
                                             'target_lang': req.target_lang})
     if translation_db is None:
         logger.info('Translation not found. Ask DeepL')
 
-        r = requests.post(url='https://api-free.deepl.com/v2/translate',
+        deepl_resp = requests.post(url='https://api-free.deepl.com/v2/translate',
                           data={
-                              'source_lang': LANG_CODE_MAP[req.source_lang],
-                              'target_lang': LANG_CODE_MAP[req.target_lang],
+                              'source_lang': req.source_lang_code,
+                              'target_lang': req.target_lang_code,
                               'auth_key': CONFIG.deepl_key,
                               'text': req.text
                           })
 
-        if r.status_code != 200:
-            raise HTTPException(status_code=r.status_code, detail=r.json())
+        if deepl_resp.status_code != 200:
+            raise HTTPException(status_code=deepl_resp.status_code, detail=deepl_resp.json())
 
         translation = Translation(id=ObjectId(), text=req.text, source_lang=req.source_lang,
                                   target_lang=req.target_lang,
-                                  translation=r.json()['translations'][0]['text'])
+                                  translation=deepl_resp.json()['translations'][0]['text'])
         translations.insert_one(translation.db())
     else:
         translation = Translation.from_db(translation_db)

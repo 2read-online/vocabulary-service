@@ -1,0 +1,39 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install modules
+        run: pip install -r requirements/test.txt
+      - name: Lint app
+        run: pylint ./app
+      - name: Lint tests
+        run: pylint ./tests
+      - name: Run Tests
+        run: PYTHONPATH=. pytest tests
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+      - name: Build image
+        run: docker build -t ${{github.repository}} .
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: 6dd62dddad719a592996501ba169bf90da398a37eecfde7856c73268b1018db9 # use secret when you're reach
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 600
+      - name: Tag image
+        run: docker tag ${{github.repository}} registry.digitalocean.com/to-read-online/${{github.event.repository.name}}:latest
+      - name: Push image to DO Container Registry
+        run: docker push registry.digitalocean.com/to-read-online/${{github.event.repository.name}}:latest

@@ -1,4 +1,5 @@
-import json
+# pylint: disable=redefined-outer-name, too-many-arguments
+"""Test handling Translate Request"""
 from unittest.mock import Mock
 
 import pytest
@@ -22,6 +23,7 @@ def valid_request() -> TranslateRequest:
 
 @pytest.fixture
 def deepl_response():
+    """Response from DeepL"""
     deepl_resp = Mock(spec=Response)
     deepl_resp.status_code = 200
     deepl_resp.json.return_value = dict(translations=[dict(text='привет')])
@@ -30,7 +32,9 @@ def deepl_response():
 
 @pytest.fixture
 def translation() -> Translation:
-    return Translation(id=ObjectId(), source_lang='eng', target_lang='rus', text='and', translation='и')
+    """Translation example"""
+    return Translation(id=ObjectId(), source_lang='eng',
+                       target_lang='rus', text='and', translation='и')
 
 
 def test__translate_from_deepl(client, headers, valid_request: TranslateRequest, deepl_response,
@@ -43,7 +47,9 @@ def test__translate_from_deepl(client, headers, valid_request: TranslateRequest,
 
     assert resp.status_code == 200
     mock_post.assert_called_with(url='https://api-free.deepl.com/v2/translate',
-                                 data={'source_lang': 'EN', 'target_lang': 'RU', 'auth_key': 'xxxxxxx', 'text': 'hey'})
+                                 data=dict(source_lang='EN', target_lang='RU',
+                                           auth_key='xxxxxxx', text='hey')
+                                 )
 
     translation = Translation.parse_raw(resp.content)
     assert translation.source_lang == valid_request.source_lang
@@ -52,8 +58,8 @@ def test__translate_from_deepl(client, headers, valid_request: TranslateRequest,
     assert translation.translation == 'привет'
 
 
-def test__translate_from_db(client, headers, valid_request: TranslateRequest, translation: Translation,
-                            mock_translations, mock_post):
+def test__translate_from_db(client, headers, valid_request: TranslateRequest,
+                            translation: Translation, mock_translations, mock_post):
     """Should request translation from DB
     """
     mock_translations.find_one.return_value = translation.db()
