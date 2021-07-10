@@ -6,10 +6,10 @@ services:
       args:
         REQUEREMENTS: requirements/test.txt
     volumes:
-      - ./app:/service/app
+      - ./main:/service/main
     networks:
       2read_online:
-    command: uvicorn app.main:app --reload --host 0.0.0.0
+    command: uvicorn main.main:main --reload --host 0.0.0.0
 
 networks:
   2read_online:

@@ -13,13 +13,20 @@ texts = Mock(spec=Collection)
 
 @pytest.fixture
 def mock_translations(mocker):
-    mock = mocker.patch('app.db.get_translation_collection')
+    mock = mocker.patch('app.db.translation.get_translation_collection')
     mock.return_value = texts
     return mock.return_value
 
 
 @pytest.fixture
-def client(mock_translations, mock_post):
+def mock_vocabulary(mocker):
+    mock = mocker.patch('app.db.vocabulary.get_vocabulary_collection')
+    mock.return_value = texts
+    return mock.return_value
+
+
+@pytest.fixture
+def client(mock_translations, mock_vocabulary, mock_post):
     from app.main import app
     return TestClient(app)
 

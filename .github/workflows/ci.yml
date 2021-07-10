@@ -12,8 +12,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install modules
         run: pip install -r requirements/test.txt
-      - name: Lint app
-        run: pylint ./app
+      - name: Lint main
+        run: pylint ./main
       - name: Lint tests
         run: pylint ./tests
       - name: Run Tests

@@ -2,5 +2,5 @@
 extension-pkg-whitelist=pydantic
 
 [FORMAT]
-good-names=i,j,k,ex,Run,_,pk,x,y,db,v
+good-names=i,j,k,ex,Run,_,pk,x,y,db,v,id
 
