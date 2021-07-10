@@ -13,7 +13,7 @@ jobs:
       - name: Install modules
         run: pip install -r requirements/test.txt
       - name: Lint main
-        run: pylint ./main
+        run: pylint ./app
       - name: Lint tests
         run: pylint ./tests
       - name: Run Tests
