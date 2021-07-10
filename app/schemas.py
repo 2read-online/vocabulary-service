@@ -61,3 +61,8 @@ class TranslateRequest(BaseModel):
     @validator('target_lang')
     def _target_lang_must_be_supported(cls, lang: str):  # pylint: disable=no-self-argument, no-self-use
         return _check_language(lang)
+
+
+class SaveRequest(BaseModel):
+    """Save translation into vocabulary request"""
+    translation_id: str = Field(alias='translationId')

@@ -4,11 +4,12 @@ from unittest.mock import Mock
 
 import pytest
 from bson import ObjectId
+from pymongo.results import InsertOneResult
 from requests import Response
 
-from app.db import Translation
+from app.db.translation import Translation
 from app.schemas import TranslateRequest
-from tests.app.conftest import get_detail
+from tests.main.conftest import get_detail
 
 
 @pytest.fixture
@@ -42,6 +43,9 @@ def test__translate_from_deepl(client, headers, valid_request: TranslateRequest,
     """Should request translation from DeepL if there is no translation in DB
     """
     mock_translations.find_one.return_value = None
+    translation_id = ObjectId()
+    mock_translations.insert_one.return_value = InsertOneResult(
+        inserted_id=translation_id, acknowledged=True)
     mock_post.return_value = deepl_response
     resp = client.post('/vocab/translate', valid_request.json(by_alias=True), headers=headers)
 
@@ -51,11 +55,15 @@ def test__translate_from_deepl(client, headers, valid_request: TranslateRequest,
                                            auth_key='xxxxxxx', text='hey')
                                  )
 
+    mock_translations.insert_one.assert_called_with(
+        {'text': 'hey', 'source_lang': 'eng', 'target_lang': 'rus', 'translation': 'привет'})
+
     translation = Translation.parse_raw(resp.content)
     assert translation.source_lang == valid_request.source_lang
     assert translation.target_lang == valid_request.target_lang
     assert translation.text == valid_request.text
     assert translation.translation == 'привет'
+    assert translation.id == translation_id
 
 
 def test__translate_from_db(client, headers, valid_request: TranslateRequest,
@@ -72,7 +80,7 @@ def test__translate_from_db(client, headers, valid_request: TranslateRequest,
     assert translation == Translation.parse_raw(resp.content)
 
 
-def test__create_no_jwt(client, valid_request):
+def test__translate_no_jwt(client, valid_request):
     """Should check access token"""
     resp = client.post('/vocab/translate', valid_request.json(by_alias=True))
 

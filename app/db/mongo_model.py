@@ -1,32 +1,10 @@
-"""DB Models"""
-import logging
+"""Mongo model"""
 from datetime import datetime
 from typing import Optional
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from pydantic import BaseModel, BaseConfig, Field
-from pymongo import MongoClient
-from pymongo.collection import Collection
-from pymongo.database import Database
-from pymongo.errors import OperationFailure
-
-from app.config import CONFIG
-
-logger = logging.getLogger('db')
-
-
-def get_translation_collection():
-    """Get or setup translation collection from MongoDB"""
-    client = MongoClient(CONFIG.mongodb_url)
-    db: Database = client.prod
-    translations: Collection = db.translations
-
-    try:
-        translations.create_index('text')
-    except OperationFailure:
-        logger.warning('User ID index already created')
-    return translations
+from pydantic import BaseModel, BaseConfig
 
 
 class OID(str):
@@ -75,12 +53,3 @@ class MongoModel(BaseModel):
             data['_id'] = data.pop('id')
 
         return data
-
-
-class Translation(MongoModel):
-    """Translation Model"""
-    id: OID
-    text: str
-    source_lang: str = Field(alias='sourceLang')
-    target_lang: str = Field(alias='targetLang')
-    translation: str
