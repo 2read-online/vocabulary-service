@@ -92,6 +92,7 @@ def get_translation(req: TranslateRequest, _user_id: ObjectId = Depends(get_curr
 def save_to_vocabulary(req: SaveRequest, user_id: ObjectId = Depends(get_current_user)):
     """Save translation into user's vocabulary
     """
+    logger.info('Save %s', req)
     entry = VocabularyEntry(translation_id=req.translation_id, owner_id=user_id)
     vocabulary.insert_one(entry.db(), entry.db())
     return {}
@@ -101,6 +102,7 @@ def save_to_vocabulary(req: SaveRequest, user_id: ObjectId = Depends(get_current
 def remove_from_vocabulary(req: RemoveRequest, user_id: ObjectId = Depends(get_current_user)):
     """Remove translation from user's vocabulary
     """
+    logger.info('Remove %s', req)
     entry = VocabularyEntry(translation_id=req.translation_id, owner_id=user_id)
     vocabulary.delete_one(entry.db())
     return {}

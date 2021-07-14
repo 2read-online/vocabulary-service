@@ -19,8 +19,8 @@ def get_vocabulary_collection():
 
     try:
         vocabulary.create_index('owner')
-    except OperationFailure:
-        logger.warning('index "owner" has already created')
+    except OperationFailure as err:
+        logger.warning('index "owner" has already created: %s', err)
     return vocabulary
 
 
