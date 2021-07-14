@@ -16,7 +16,7 @@ from starlette.responses import JSONResponse
 from app.config import CONFIG
 from app.db.translation import Translation, get_translation_collection
 from app.db.vocabulary import VocabularyEntry, get_vocabulary_collection
-from app.schemas import TranslateRequest, SaveRequest
+from app.schemas import TranslateRequest, SaveRequest, RemoveRequest
 
 logging.basicConfig(level='DEBUG')
 logger = logging.getLogger('main')
@@ -94,6 +94,15 @@ def save_to_vocabulary(req: SaveRequest, user_id: ObjectId = Depends(get_current
     """
     entry = VocabularyEntry(translation_id=req.translation_id, owner_id=user_id)
     vocabulary.insert_one(entry.db(), entry.db())
+    return {}
+
+
+@app.post('/vocab/remove')
+def remove_from_vocabulary(req: RemoveRequest, user_id: ObjectId = Depends(get_current_user)):
+    """Remove translation from user's vocabulary
+    """
+    entry = VocabularyEntry(translation_id=req.translation_id, owner_id=user_id)
+    vocabulary.delete_one(entry.db())
     return {}
 
 
