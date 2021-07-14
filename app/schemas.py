@@ -66,3 +66,8 @@ class TranslateRequest(BaseModel):
 class SaveRequest(BaseModel):
     """Save translation into vocabulary request"""
     translation_id: str = Field(alias='translationId')
+
+
+class RemoveRequest(BaseModel):
+    """Remove translation from vocabulary request"""
+    translation_id: str = Field(alias='translationId')
