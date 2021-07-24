@@ -1,5 +1,6 @@
 """Web application"""
 import logging
+import re
 from typing import List
 
 import requests
@@ -16,6 +17,7 @@ from starlette.responses import JSONResponse
 from app.config import CONFIG
 from app.db.translation import Translation, get_translation_collection
 from app.db.vocabulary import VocabularyEntry, get_vocabulary_collection
+from app.nlp import NLPEngine
 from app.schemas import TranslateRequest, SaveRequest, RemoveRequest
 
 logging.basicConfig(level='DEBUG')
@@ -25,7 +27,7 @@ translations: Collection = get_translation_collection()
 vocabulary: Collection = get_vocabulary_collection()
 
 app = FastAPI()
-
+nlp = NLPEngine()
 
 @AuthJWT.load_config
 def get_config():
@@ -60,26 +62,59 @@ def get_current_user(req: Request) -> ObjectId:
 def get_translation(req: TranslateRequest, _user_id: ObjectId = Depends(get_current_user)):
     """Get text from DB by its ID
     """
-    translation_db = translations.find_one({'text': req.text,
-                                            'source_lang': req.source_lang,
-                                            'target_lang': req.target_lang})
+
+    logger.info(req.dict())
+    src_word_info = nlp.get_info(req.source_lang, req.text, req.context)
+    logger.info('%s is [%s, %s]', req.text, src_word_info.lemma, src_word_info.pos)
+    translations_db = translations.find({'text': src_word_info.lemma,
+                                         'pos': src_word_info.pos,
+                                         'source_lang': req.source_lang,
+                                         'target_lang': req.target_lang})
+    translation_db = None
+    THRESHOLD = 0.8
+    for t in translations_db:
+        sim = nlp.similarity(req.source_lang, t['context'], req.context)
+        logger.info('Similar to "%s" on %f', t['context'], sim)
+        if sim > THRESHOLD:
+            translation_db = t
+
     if translation_db is None:
-        logger.info('Translation not found. Ask DeepL')
+        marked_context = req.context.replace(req.text, f'<w>{req.text}</w>', 1)
+        logger.info('Translation not found for this context. Ask DeepL: "%s"', marked_context)
 
         deepl_resp = requests.post(url='https://api-free.deepl.com/v2/translate',
-                          data={
-                              'source_lang': req.source_lang_code,
-                              'target_lang': req.target_lang_code,
-                              'auth_key': CONFIG.deepl_key,
-                              'text': req.text
-                          })
+                                   data={
+                                       'source_lang': req.source_lang_code,
+                                       'target_lang': req.target_lang_code,
+                                       'auth_key': CONFIG.deepl_key,
+                                       'text': marked_context,
+                                       'tag_handling': 'xml'
+                                   })
 
         if deepl_resp.status_code != 200:
             raise HTTPException(status_code=deepl_resp.status_code, detail=deepl_resp.json())
 
-        translation = Translation(text=req.text, source_lang=req.source_lang,
+        context_translation: str = deepl_resp.json()['translations'][0]['text']
+        m = re.search('<w>(.*)</w>', context_translation)
+
+        if m is None:
+            raise HTTPException(status_code=500, detail="Failed get translation")
+
+        translated_word = m.group(1)
+        logger.info(context_translation)
+        context_translation = context_translation.replace('<w>', '').replace('</w>', '')
+
+        logger.info('%s in %s', translated_word, context_translation)
+        dst_word_info = nlp.get_info(req.target_lang, translated_word, context_translation)
+        logger.info('%s -> %s', translated_word, dst_word_info.lemma)
+
+        translation = Translation(text=src_word_info.lemma, pos=src_word_info.pos,
+                                  source_lang=req.source_lang,
                                   target_lang=req.target_lang,
-                                  translation=deepl_resp.json()['translations'][0]['text'])
+                                  translation=dst_word_info.lemma,
+                                  context=req.context)
+
+        logger.info(translation)
         ret: InsertOneResult = translations.insert_one(translation.db())
         translation.id = ret.inserted_id
     else:

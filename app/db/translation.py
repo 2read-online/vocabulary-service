@@ -1,8 +1,9 @@
 """DB Translation Model"""
 import logging
+from typing import Optional
 
 from pydantic import Field
-from pymongo import MongoClient
+from pymongo import MongoClient, IndexModel, ASCENDING
 from pymongo.errors import OperationFailure
 
 from app.db.mongo_model import MongoModel
@@ -18,7 +19,7 @@ def get_translation_collection():
     translations = db.translations
 
     try:
-        translations.create_index('text', unique=True)
+        translations.create_index(keys=[('text', ASCENDING), ('pos', ASCENDING)], name='text_pos')
     except OperationFailure as err:
         logger.warning('Index "text" already created: %s', err)
     return translations
@@ -27,6 +28,8 @@ def get_translation_collection():
 class Translation(MongoModel):
     """Translation Model"""
     text: str
+    pos: Optional[str]
     source_lang: str = Field(alias='sourceLang')
     target_lang: str = Field(alias='targetLang')
     translation: str
+    context: Optional[str]

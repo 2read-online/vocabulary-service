@@ -2,30 +2,30 @@
 from pydantic import BaseModel, Field, validator, ValidationError
 
 LANG_CODE_MAP = {
-    'bul': 'BG',
-    'ces': 'CS',
-    'dan': 'DA',
-    'deu': 'DE',
-    'ell': 'EL',
-    'eng': 'EN',
-    'spa': 'ES',
-    'est': 'ET',
-    'fin': 'FI',
-    'fra': 'FR',
-    'hun': 'HU',
-    'ita': 'IT',
-    'jpn': 'JA',
-    'lit': 'LT',
-    'lav': 'LV',
-    'nld': 'NL',
-    'pol': 'PL',
-    'por': 'PT',
-    'ron': 'RO',
-    'rus': 'RU',
-    'slk': 'SK',
-    'slv': 'SL',
-    'swe': 'SV',
-    'zho': 'ZH',
+    'bul': 'BG', # no
+    'ces': 'CS', # no
+    'dan': 'DA', # da_core_news_md
+    'deu': 'DE', # de_core_news_md
+    'ell': 'EL', # el_core_news_md
+    'eng': 'EN', # en_core_web_md
+    'spa': 'ES', # es_core_news_md
+    'est': 'ET', # no
+    'fin': 'FI', # no
+    'fra': 'FR', # fr_core_news_md
+    'hun': 'HU', # no
+    'ita': 'IT', # it_core_news_md
+    'jpn': 'JA', # ja_core_news_md
+    'lit': 'LT', # lt_core_news_md
+    'lav': 'LV', # no
+    'nld': 'NL', # nl_core_news_md
+    'pol': 'PL', # pl_core_news_md
+    'por': 'PT', # pt_core_news_md
+    'ron': 'RO', # ro_core_news_md
+    'rus': 'RU', # ru_core_news_md
+    'slk': 'SK', # no
+    'slv': 'SL', # no
+    'swe': 'SV', # no
+    'zho': 'ZH', # zh_core_web_md
 }
 
 
@@ -39,6 +39,7 @@ class TranslateRequest(BaseModel):
     """Translate Request
     """
     text: str
+    context: str
     source_lang: str = Field(alias='sourceLang', )
     target_lang: str = Field(alias='targetLang')
 
