@@ -7,16 +7,16 @@ from app.schemas import TranslateRequest
 
 def test__translate_request_ok():
     """Should be valid"""
-    TranslateRequest(text='some_text', targetLang='eng', sourceLang='rus')
+    TranslateRequest(text='some_text', targetLang='eng', sourceLang='rus', context='Some context')
 
 
 def test__translate_request_check_target_lang():
     """Should invalidate targetLang"""
     with pytest.raises(ValidationError):
-        TranslateRequest(text='some_text', targetLang='xxx', sourceLang='rus')
+        TranslateRequest(text='some_text', targetLang='xxx', sourceLang='rus', context='Some context')
 
 
 def test__translate_request_check_source_lang():
     """Should invalidate sourceLang"""
     with pytest.raises(ValidationError):
-        TranslateRequest(text='some_text', targetLang='rus', sourceLang='xxx')
+        TranslateRequest(text='some_text', targetLang='rus', sourceLang='xxx', context='Some context')
