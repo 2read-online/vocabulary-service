@@ -5,6 +5,7 @@ from typing import Optional
 
 import spacy
 from spacy import Language
+from app.config import CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +42,10 @@ class NLPEngine:
 
     def get_info(self, lang: str, word: str, context: str) -> Optional[WordInfo]:
         doc = self._get_model(lang)(context)
+        # word = self._get_model(lang)(word)
         for token in doc:
             if token.text == word:
+                print(token)
                 return WordInfo(word=word, lang=lang, lemma=token.lemma_, pos=token.pos_)
 
         return None

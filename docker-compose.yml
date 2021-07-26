@@ -7,10 +7,9 @@ services:
         REQUEREMENTS: requirements/test.txt
     volumes:
       - ./main:/service/main
+      - ./.local:/root/.local
     networks:
       2read_online:
-    command: uvicorn main.main:main --reload --host 0.0.0.0
-
 networks:
   2read_online:
     external: true

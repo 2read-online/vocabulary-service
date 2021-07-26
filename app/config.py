@@ -10,6 +10,6 @@ class Config(BaseSettings):
     authjwt_secret_key: str = Field(description='Secret key for JWT',
                                     env='secret_key', default='secret')
     deepl_key: str = Field(description='DeepL authentication key', default='xxxxxxx')
-
+    spacy_download_path: str = Field('/usr/src/models/', description='Path to download models')
 
 CONFIG = Config()
