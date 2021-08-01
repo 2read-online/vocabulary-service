@@ -7,9 +7,10 @@ services:
         REQUEREMENTS: requirements/test.txt
     volumes:
       - ./main:/service/main
-      - ./.local:/root/.local
     networks:
       2read_online:
 networks:
   2read_online:
     external: true
+volumes:
+  models:
