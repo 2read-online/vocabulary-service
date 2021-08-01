@@ -11,5 +11,7 @@ class Config(BaseSettings):
                                     env='secret_key', default='secret')
     deepl_key: str = Field(description='DeepL authentication key', default='xxxxxxx')
     spacy_download_path: str = Field('/usr/src/models/', description='Path to download models')
+    similarity_threshold: float = Field(0.8)
+
 
 CONFIG = Config()

@@ -82,6 +82,21 @@ def test__translate_from_db(client, headers, valid_request: TranslateRequest,
     assert translation == Translation.parse_raw(resp.content)
 
 
+def test__translate_from_db_with_similarity(client, headers, valid_request: TranslateRequest,
+                                            translation: Translation, mock_translations, mock_post):
+    """Should request translation from DB and get translation with similar context
+    """
+    trans1 = translation.db()
+    trans2 = translation.db()
+    trans2['context'] = 'Hey, so ugly manticore'
+    mock_translations.find.return_value = [trans2, trans1]
+
+    resp = client.post('/vocab/translate', valid_request.json(by_alias=True), headers=headers)
+
+    assert resp.status_code == 200
+    assert trans1 == Translation.parse_raw(resp.content).db()
+
+
 def test__translate_no_jwt(client, valid_request):
     """Should check access token"""
     resp = client.post('/vocab/translate', valid_request.json(by_alias=True))

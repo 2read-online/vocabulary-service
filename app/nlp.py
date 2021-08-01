@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from subprocess import run
-from typing import Optional
+from typing import Optional, Tuple, List
 
 import spacy
 from spacy import Language
@@ -54,6 +54,19 @@ class NLPEngine:
     def similarity(self, lang: str, context1: str, context2: str) -> float:
         model = self._get_model(lang)
         return model(context1).similarity(model(context2))
+
+    def find_most_similar_or_none(self, lang: str, context: str, known_contexts: List[str],
+                                  threshold: float) -> Optional[int]:
+        best_sim: Tuple[Optional[int], float] = (None, 0.,)
+        for i, ctx in enumerate(known_contexts):
+            sim = self.similarity(lang, context, ctx)
+            if sim > best_sim[1]:
+                best_sim = (i, sim)
+
+        if best_sim[1] >= threshold:
+            return best_sim[0]
+
+        return None
 
     def _get_model(self, lang) -> Optional[Language]:
         if lang not in MODEL_MAP:

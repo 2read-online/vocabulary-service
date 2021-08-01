@@ -70,13 +70,10 @@ def get_translation(req: TranslateRequest, _user_id: ObjectId = Depends(get_curr
                                          'pos': src_word_info.pos,
                                          'source_lang': req.source_lang,
                                          'target_lang': req.target_lang})
-    translation_db = None
-    THRESHOLD = 0.8
-    for t in translations_db:
-        sim = nlp.similarity(req.source_lang, t['context'], req.context)
-        logger.info('Similar to "%s" on %f', t['context'], sim)
-        if sim > THRESHOLD:
-            translation_db = t
+    known_contexts = [trans['context'] for trans in translations_db]
+    most_similar_index = nlp.find_most_similar_or_none(req.source_lang, req.context, known_contexts,
+                                                       threshold=CONFIG.similarity_threshold)
+    translation_db = translations_db[most_similar_index] if most_similar_index is not None else None
 
     if translation_db is None:
         marked_context = req.context.replace(req.text, f'<w>{req.text}</w>', 1)
