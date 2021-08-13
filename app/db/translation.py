@@ -1,6 +1,6 @@
 """DB Translation Model"""
 import logging
-from typing import Optional
+from typing import Optional, List, Set
 
 from pydantic import Field
 from pymongo import MongoClient, IndexModel, ASCENDING
@@ -29,6 +29,7 @@ class Translation(MongoModel):
     """Translation Model"""
     text: str
     pos: Optional[str]
+    forms: List[str]
     source_lang: str = Field(alias='sourceLang')
     target_lang: str = Field(alias='targetLang')
     translation: str

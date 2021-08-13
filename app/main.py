@@ -64,12 +64,12 @@ def get_translation(req: TranslateRequest, _user_id: ObjectId = Depends(get_curr
     """
 
     logger.info(req.dict())
-    src_word_info = nlp.get_info(req.source_lang, req.text, req.context)
-    logger.info('%s is [%s, %s]', req.text, src_word_info.lemma, src_word_info.pos)
-    translations_db = translations.find({'text': src_word_info.lemma,
-                                         'pos': src_word_info.pos,
-                                         'source_lang': req.source_lang,
-                                         'target_lang': req.target_lang})
+    source_word = nlp.get_info(req.source_lang, req.text, req.context)
+    logger.info('%s is [%s, %s]', req.text, source_word.lemma, source_word.pos)
+    translations_db = list(translations.find({'text': source_word.lemma,
+                                              'pos': source_word.pos,
+                                              'source_lang': req.source_lang,
+                                              'target_lang': req.target_lang}))
     known_contexts = [trans['context'] for trans in translations_db]
     most_similar_index = nlp.find_most_similar_or_none(req.source_lang, req.context, known_contexts,
                                                        threshold=CONFIG.similarity_threshold)
@@ -102,20 +102,25 @@ def get_translation(req: TranslateRequest, _user_id: ObjectId = Depends(get_curr
         context_translation = context_translation.replace('<w>', '').replace('</w>', '')
 
         logger.info('%s in %s', translated_word, context_translation)
-        dst_word_info = nlp.get_info(req.target_lang, translated_word, context_translation)
-        logger.info('%s -> %s', translated_word, dst_word_info.lemma)
+        target_word = nlp.get_info(req.target_lang, translated_word, context_translation)
+        logger.info('%s -> %s', translated_word, target_word.lemma)
 
-        translation = Translation(text=src_word_info.lemma, pos=src_word_info.pos,
+        translation = Translation(text=source_word.lemma, pos=source_word.pos,
                                   source_lang=req.source_lang,
                                   target_lang=req.target_lang,
-                                  translation=dst_word_info.lemma,
-                                  context=req.context)
+                                  translation=target_word.lemma,
+                                  context=req.context,
+                                  forms=[source_word.word])
 
         logger.info(translation)
         ret: InsertOneResult = translations.insert_one(translation.db())
         translation.id = ret.inserted_id
     else:
         translation = Translation.from_db(translation_db)
+
+        if source_word.word not in translation.forms:
+            translation.forms.append(source_word.word)
+            translations.update_one({'_id': translation.id}, {'$set': {'forms': translation.db()['forms']}})
 
     return translation
 
