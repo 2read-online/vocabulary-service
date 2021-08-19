@@ -18,7 +18,7 @@ def get_translation_collection():
     translations = db.translations
 
     try:
-        translations.create_index('text', unique=True)
+        translations.create_index('text')
     except OperationFailure as err:
         logger.warning('Index "text" already created: %s', err)
     return translations
