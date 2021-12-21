@@ -1,39 +1,53 @@
 name: CI
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
-    
+    branches: [ main ]
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Update pip
+        run: pip install -U pip
+
       - name: Install modules
         run: pip install -r requirements/test.txt
-      - name: Lint main
-        run: pylint ./app
+
+      - name: Lint app
+        run: PYTHONPATH=. pylint ./app
+
       - name: Lint tests
-        run: pylint ./tests
+        run: PYTHONPATH=. pylint ./tests
+
       - name: Run Tests
         run: PYTHONPATH=. pytest tests
+
+
   deploy:
     runs-on: ubuntu-latest
     needs: test
-    if: github.ref == 'refs/heads/master'
     steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v2
-      - name: Build image
-        run: docker build -t ${{github.repository}} .
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+      - uses: actions/checkout@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
-          token: 6dd62dddad719a592996501ba169bf90da398a37eecfde7856c73268b1018db9 # use secret when you're reach
-      - name: Log in to DO Container Registry
-        run: doctl registry login --expiry-seconds 600
-      - name: Tag image
-        run: docker tag ${{github.repository}} registry.digitalocean.com/to-read-online/${{github.event.repository.name}}:latest
-      - name: Push image to DO Container Registry
-        run: docker push registry.digitalocean.com/to-read-online/${{github.event.repository.name}}:latest
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ghcr.io/${{github.repository}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
